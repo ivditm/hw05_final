@@ -13,6 +13,7 @@ from posts.models import Comment, Follow, Group, Post, User
 
 ADRESS_INDEX = reverse('posts:index')
 ADRESS_CREATE = reverse('posts:post_create')
+EMPTY = 0
 REVERSE_FOLLOW = reverse('posts:follow_index')
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -40,6 +41,7 @@ class PagesTests(TestCase):
 
         cls.user = User.objects.create_user(username='ALADIN')
         cls.user1 = User.objects.create_user(username='OBI')
+        cls.user2 = User.objects.create_user(username='Жасмин')
 
         cls.group = Group.objects.create(
             title='TEST',
@@ -76,6 +78,10 @@ class PagesTests(TestCase):
             user=cls.user,
             author=cls.user1
         )
+        cls.following1 = Follow.objects.create(
+            user=cls.user2,
+            author=cls.user
+        )
         cls.PROFILE_REVERSE = reverse('posts:profile',
                                       args=[cls.user.username])
         cls.EDIT_REVERSE = reverse('posts:post_edit', args=[cls.post.pk])
@@ -103,6 +109,8 @@ class PagesTests(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        self.authorized_client2 = Client()
+        self.authorized_client2.force_login(self.user2)
 
     def test_using_correct_template(self):
         '''Проверим корректность template'''
@@ -181,11 +189,31 @@ class PagesTests(TestCase):
             self.assertNotEqual(post_group, self.group1.slug)
 
     def test_check_follow(self):
-        """Проверим, что при подписке на автора,
-        выводяться только его посты"""
+        """Авторизованный пользователь может
+        подписываться на других пользователей"""
         response = self.authorized_client.get(REVERSE_FOLLOW)
         for post in response.context['page_obj']:
             self.assertEqual(post.author, self.user1)
+
+    def test_more_check_follow(self):
+        """Новая запись пользователя появляется в ленте тех,
+        кто на него подписан и не появляется в ленте тех,
+        кто не подписан."""
+        new_post = Post.objects.create(
+            text='не переделывай меня',
+            author=self.user1
+        )
+        response = self.authorized_client.get(REVERSE_FOLLOW)
+        response_fail = self.authorized_client2.get(REVERSE_FOLLOW)
+        self.assertTrue(new_post in response.context['page_obj'])
+        self.assertFalse(new_post in response_fail.context['page_obj'])
+
+    def test_unfollow(self):
+        """без понятия что должно произойти"""
+        self.following.delete()
+        # А В ЧЕМ ПРОВЕРКА-ТО?
+        response = self.authorized_client.get(REVERSE_FOLLOW)
+        self.assertEqual(len(list(response.context['page_obj'])), EMPTY)
 
 
 class PaginatorViewsTest(TestCase):
