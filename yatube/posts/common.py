@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.core.paginator import Paginator
-from .models import Follow
 
 
 def my_paginator(posts, request):
