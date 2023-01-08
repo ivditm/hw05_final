@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load thumbnail %}
+  <header>
+    {% block title %}
+       Подписка
+    {% endblock %}
+  </header>
+  {% block content %}
+    {% for post in page_obj %}
+        {% include 'posts/single_post.html' %}
+    {% endfor %}
+    {% include 'posts/paginator.html' %}
+{% endblock %}

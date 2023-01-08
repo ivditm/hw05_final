@@ -1,0 +1,28 @@
+<!-- templates/base.html -->
+<!DOCTYPE html> 
+{% load static %}       
+<head> 
+  {% include 'includes/head.html' %}  
+</head>
+  <body>       
+    <header>
+      {% include 'includes/header.html' %}
+      <title>
+        {% block title %}
+            титлы не подвезли :(
+        {% endblock %}
+        </title>
+    </header>
+    <main>
+      <div class="container py-5">
+        {% block content %}
+          <div class="container py-5">
+            Контент не подвезли :(
+        {% endblock %}
+          </div>
+    </main>
+    <footer>
+      {% include 'includes/footer.html' %} 
+    </footer>
+  </body>
+</html> 
