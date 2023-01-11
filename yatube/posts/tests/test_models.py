@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.conf import settings
 
-from ..models import Comment, Group, Post, User
+from ..models import Comment, Follow, Group, Post, User
 
 
 class PostModelTest(TestCase):
@@ -9,6 +9,7 @@ class PostModelTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create_user(username='auth')
+        cls.user1 = User.objects.create_user(username='abi')
         cls.group = Group.objects.create(
             title='TEST',
             slug='TEST',
@@ -22,18 +23,20 @@ class PostModelTest(TestCase):
             author=cls.user,
             text='TEST'
         )
+        cls.follow = Follow(
+            user=cls.user,
+            author=cls.user1
+        )
 
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
-        post = self.post
-        group = self.group
-        comment = self.comment
         test_dict = {
-            post: ' '.join(
-                post.text.split()[:settings.NUMBER_OF_WORDS]),
-            group: group.title,
-            comment: ' '.join(
-                comment.text.split()[:settings.NUMBER_OF_WORDS]),
+            self.post: ' '.join(
+                self.post.text.split()[:settings.NUMBER_OF_WORDS]),
+            self.group: self.group.title,
+            self.comment: ' '.join(
+                self.comment.text.split()[:settings.NUMBER_OF_WORDS]),
+            # self.follow: f'{self.user} подписан на {self.user1}'
         }
         for field, expected_value in test_dict.items():
             with self.subTest(field=field):
@@ -42,22 +45,20 @@ class PostModelTest(TestCase):
 
     def test_verbose_name(self):
         """verbose_name в полях совпадает с ожидаемым."""
-        field_verboses_post = {
-            'text': 'Текст поста',
-            'pub_date': 'Дата публикации',
-            'author': 'Автор',
-            'group': 'Группа',
-            'image': 'Картинка',
-        }
-        field_verboses_comment = {
-            'text': 'Текст комментария',
-            'created': 'Дата публикации',
-            'author': 'Автор',
-            'post': 'Пост',
-        }
         DICT = {
-            Post: field_verboses_post,
-            Comment: field_verboses_comment,
+            Post: {
+                'text': 'Текст поста',
+                'pub_date': 'Дата публикации',
+                'author': 'Автор',
+                'group': 'Группа',
+                'image': 'Картинка',
+            },
+            Comment: {
+                'text': 'Текст комментария',
+                'created': 'Дата публикации',
+                'author': 'Автор',
+                'post': 'Пост',
+            },
         }
         for model, dict in DICT.items():
             for field, expected_value in dict.items():
@@ -68,18 +69,16 @@ class PostModelTest(TestCase):
 
     def test_help_text(self):
         """help_text в полях совпадает с ожидаемым."""
-        field_help_texts_post = {
-            'text': 'Введите текст поста',
-            'group': 'Группа, к которой будет относиться пост',
-            'image': 'Загрузите картинку'
-        }
-        field_help_texts_comment = {
-            'text': 'Введите текст комментария',
-            'post': 'Пост, к которому будет относиться комментарий'
-        }
         DICT = {
-            Post: field_help_texts_post,
-            Comment: field_help_texts_comment
+            Post: {
+                'text': 'Введите текст поста',
+                'group': 'Группа, к которой будет относиться пост',
+                'image': 'Загрузите картинку'
+            },
+            Comment: {
+                'text': 'Введите текст комментария',
+                'post': 'Пост, к которому будет относиться комментарий'
+            }
         }
         for model, field_help_texts in DICT.items():
             for field, expected_value in field_help_texts.items():

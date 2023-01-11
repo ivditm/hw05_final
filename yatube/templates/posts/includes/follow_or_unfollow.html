@@ -1,0 +1,10 @@
+{% if following and request.user != author %}
+ <a class="btn btn-lg btn-light"
+   href="{% url 'posts:profile_unfollow' author.username %}"
+   role="button">Отписаться</a>
+   {% else %}
+  <a class="btn btn-lg btn-primary"
+      href="{% url 'posts:profile_follow' author.username %}" 
+      role="button">Подписаться</a> 
+      {% comment %} {% include 'posts/includes/follow_or_unfollow.html' %} {% endcomment %}
+    {% endif %}

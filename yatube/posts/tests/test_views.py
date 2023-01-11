@@ -3,11 +3,11 @@ import tempfile
 
 from django.test import Client, override_settings, TestCase
 from django.urls import reverse
-from django import forms
 from django.conf import settings
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from posts.common import check_post_exist
+from posts.utils import check_post_exist
 from posts.models import Comment, Follow, Group, Post, User
 
 
@@ -104,46 +104,34 @@ class PagesTests(TestCase):
             cls.EDIT_REVERSE: 'posts/post_create.html',
             REVERSE_FOLLOW: 'posts/follow.html',
         }
+        cls.guest_client = Client()
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
+        cls.authorized_client2 = Client()
+        cls.authorized_client2.force_login(cls.user2)
 
     def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
-        self.authorized_client2 = Client()
-        self.authorized_client2.force_login(self.user2)
+        cache.clear()
 
-    def test_using_correct_template(self):
-        '''Проверим корректность template'''
-        for reverse_name, template in self.TEST_DICT.items():
-            with self.subTest(reverse_name=reverse_name):
-                response = self.authorized_client.get(reverse_name)
-                self.assertTemplateUsed(response, template)
-
-    def test_check_index_context(self):
-        """Проверим контекст страницы index"""
-        response = self.authorized_client.get(ADRESS_INDEX)
-        self.assertEqual(list(response.context['page_obj']),
-                         list(Post.objects.all())[:settings.NUMBER_OF_POSTS])
-
-    def test_check_group_list_context(self):
+    def test_check_views_context(self):
         """Проверим контекст страницы group_list"""
-        response = self.authorized_client.get(self.GROUP_REVERSE)
-        for post in list(response.context['page_obj']):
-            with self.subTest(post=post):
-                self.assertEqual(post.group.slug, self.group.slug)
-
-    def test_check_profile_context(self):
-        """проверим контекст страницы профайл"""
-        response = self.authorized_client.get(self.PROFILE_REVERSE)
-        for post in response.context['page_obj']:
-            post_author = post.author.username
-        self.assertEqual(post_author, self.user.username)
-
-    def test_check_post_detail_contex(self):
-        """Проверим контекст страницы post_detail"""
-        response = self.authorized_client.get(self.DETAIL_REVERSE)
-        self.assertEqual(response.context['post'], self.post)
-        self.assertEqual(response.context['comments'][0], self.comment)
+        response_index = self.authorized_client.get(ADRESS_INDEX)
+        response_groop = self.authorized_client.get(self.GROUP_REVERSE)
+        response_prof = self.authorized_client.get(self.PROFILE_REVERSE)
+        response_detail = self.authorized_client.get(self.DETAIL_REVERSE)
+        MU_DICT = {
+            tuple(response_index.context['page_obj']):
+            tuple(Post.objects.all()[:settings.NUMBER_OF_POSTS]),
+            response_groop.context[
+                'page_obj'][0].group.slug: self.group.slug,
+            response_prof.context[
+                'page_obj'][0].author.username: self.user.username,
+            response_detail.context['post']: self.post,
+            response_detail.context['comments'][0]: self.comment
+        }
+        for context, expected in MU_DICT.items():
+            with self.subTest(context=context):
+                self.assertEqual(context, expected)
 
     def test_cache(self):
         """Проверим работу кэша"""
@@ -155,26 +143,6 @@ class PagesTests(TestCase):
         my_post.delete()
         response_2 = self.authorized_client.get(ADRESS_INDEX)
         self.assertEqual(response_1.content, response_2.content)
-
-    def test_check_forms_posts_context(self):
-        resp_post_create = self.authorized_client.get(ADRESS_CREATE)
-        resp_post_edit = self.authorized_client.get(self.EDIT_REVERSE)
-        test_list = [resp_post_create, resp_post_edit]
-        form_fields = {
-            'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField,
-            'image': forms.fields.ImageField
-        }
-        for response in test_list:
-            for value, expected in form_fields.items():
-                with self.subTest(value=value):
-                    form_field = response.context.get('form').fields.get(value)
-                    self.assertIsInstance(form_field, expected)
-
-    def test_check_form_comment(self):
-        resp = self.authorized_client.get(self.DETAIL_REVERSE)
-        form_field = resp.context.get('form').fields.get('text')
-        self.assertIsInstance(form_field, forms.fields.CharField)
 
     def test_suplement_check(self):
         """Проверим что пост не попадет в другую группу"""
@@ -209,9 +177,8 @@ class PagesTests(TestCase):
         self.assertFalse(new_post in response_fail.context['page_obj'])
 
     def test_unfollow(self):
-        """без понятия что должно произойти"""
+        """до сих пор без понятия что должно произойти"""
         self.following.delete()
-        # А В ЧЕМ ПРОВЕРКА-ТО?
         response = self.authorized_client.get(REVERSE_FOLLOW)
         self.assertEqual(len(list(response.context['page_obj'])), EMPTY)
 
@@ -237,11 +204,10 @@ class PaginatorViewsTest(TestCase):
                                       args=[cls.user.username])
         cls.GROUP_REVERSE = reverse('posts:group_list', args=[cls.group.slug])
 
-    def setUp(self):
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
 
-    def test_first_page_contains_ten_records(self):
+    def test_first_page_contains_correct_num_records(self):
         """Проверим паджинатор на первой странице"""
         res_index = self.authorized_client.get(ADRESS_INDEX)
         res_list_group = self.authorized_client.get(self.GROUP_REVERSE)
@@ -255,7 +221,7 @@ class PaginatorViewsTest(TestCase):
             with self.subTest(response=response):
                 self.assertEqual(len(response.context['page_obj']), expected)
 
-    def test_second_page_contains_three_records(self):
+    def test_second_page_contains_correct_num_records(self):
         """Проверим паджинатор на второй странице"""
         res_index = self.authorized_client.get(ADRESS_INDEX + '?page=2')
         res_list_group = self.authorized_client.get(
@@ -300,14 +266,13 @@ class ImageCheck (TestCase):
         cls.DETAIL_REVERSE = reverse('posts:post_detail', args=[cls.post.pk])
         cls.GROUP_REVERSE = reverse('posts:group_list', args=[cls.group.slug])
 
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
-
-    def setUp(self):
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
 
     def test_check_image(self):
         """Проверим, что картинка передается

@@ -61,96 +61,61 @@ class TaskURLTests(TestCase):
             cls.EDIT_REVERSE: 'posts/post_create.html',
             REVERSE_FOLLOW: 'posts/follow.html',
         }
-
-    def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
-        self.authorized_client_not_auhtor = Client()
-        self.authorized_client_not_auhtor.force_login(self.user1)
+        cls.guest_client = Client()
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
+        cls.authorized_client_not_auhtor = Client()
+        cls.authorized_client_not_auhtor.force_login(cls.user1)
 
     def test_free_pages_exist_at_desired_location(self):
-        """Проверяем общедоступные страницы"""
-        res_home = self.guest_client.get(URL_INDEX)
-        res_groups = self.guest_client.get(
-            self.GROUP_REVERSE
-        )
-        res_prof = self.guest_client.get(
-            self.PROFILE_REVERSE
-        )
-        res_post = self.guest_client.get(
-            self.DETAIL_REVERSE
-        )
-        res_unexist = self.guest_client.get(URL_UNEXISTING)
-        test_dict = {
-            res_home: HTTPStatus.OK,
-            res_groups: HTTPStatus.OK,
-            res_prof: HTTPStatus.OK,
-            res_post: HTTPStatus.OK,
-            res_unexist: HTTPStatus.NOT_FOUND
+        """Проверяем страницы"""
+        DICT = {
+            self.guest_client: {
+                URL_INDEX: HTTPStatus.OK,
+                URL_UNEXISTING: HTTPStatus.NOT_FOUND,
+                URL_LOGIN: HTTPStatus.OK,
+                self.PROFILE_REVERSE: HTTPStatus.OK,
+                self.DETAIL_REVERSE: HTTPStatus.OK,
+                self.GROUP_REVERSE: HTTPStatus.OK
+            },
+            self.authorized_client: {
+                URL_CREATE: HTTPStatus.OK,
+                REVERSE_FOLLOW: HTTPStatus.OK,
+                self.EDIT_REVERSE: HTTPStatus.OK
+            }
         }
-        for response, expected_value in test_dict.items():
-            with self.subTest(response=response):
-                self.assertEqual(
-                    response.status_code, expected_value, 'oops!')
+        for client, second_dict in DICT.items():
+            for url, status in second_dict.items():
+                with self.subTest(url=url):
+                    self.assertEqual(
+                        client.get(url).status_code, status, 'oops!')
 
-    def test_url_exists_at_desired_location_authorized(self):
-        """Проверим, что создать пост может только
-           авторизованный пользователь"""
-        res_create = self.authorized_client.get(URL_CREATE)
-        self.assertEqual(
-            res_create.status_code, HTTPStatus.OK, 'что-то не так с create'
-        )
-
-    def test_url_exists_at_desired_location_for_author(self):
-        """Проверим, что автор может редактировать пост"""
-        res_edit = self.authorized_client.get(
-            self.EDIT_REVERSE
-        )
-        self.assertEqual(res_edit.status_code, HTTPStatus.OK,
-                         'что-то не так с редактированием')
-
-    def test_redirect_create(self):
-        """Проверяем, что неавторизованный пользователь
-           перенапрявдяется на страницу логина"""
-        resp = self.guest_client.get(URL_CREATE, follow=True)
-        self.assertRedirects(resp, URL_LOGIN + URL_CREATE)
-
-    def test_redirect_edit(self):
-        """Проверим, что не автор переадресуется на страницу поста"""
-        resp = self.authorized_client_not_auhtor.get(
-            self.EDIT_REVERSE,
-            follow=True
-        )
-        self.assertRedirects(resp, self.DETAIL_REVERSE)
-
-    def test_comment(self):
-        """Проверим, что неавторизованный пользователь,
-        не сможет оставить комментарий"""
-        resp_fail = self.guest_client.get(self.COMMENT_REVERSE)
-        self.assertRedirects(resp_fail,
-                             URL_LOGIN + self.COMMENT_REVERSE)
-
-    def test_follow_prof(self):
-        """Проверим, что подписываться/отписываться
-        могут только авторизированные пользователи"""
+    def test_redirect(self):
+        """Проверим редиректы"""
         resp_follow = self.guest_client.get(
             self.REVERSE_PROF_FOLLOW
         )
         resp_unfollow = self.guest_client.get(
             self.REVERSE_PROF_UNFOLLOW
         )
+        resp_edit = self.authorized_client_not_auhtor.get(
+            self.EDIT_REVERSE,
+            follow=True
+        )
+        resp_comment = self.guest_client.get(self.COMMENT_REVERSE)
+        resp_create = self.guest_client.get(URL_CREATE, follow=True)
+
         TEST_DICT = {
-            resp_follow: self.REVERSE_PROF_FOLLOW,
-            resp_unfollow: self.REVERSE_PROF_UNFOLLOW
+            resp_follow: URL_LOGIN + self.REVERSE_PROF_FOLLOW,
+            resp_unfollow: URL_LOGIN + self.REVERSE_PROF_UNFOLLOW,
+            resp_edit: self.DETAIL_REVERSE,
+            resp_comment: URL_LOGIN + self.COMMENT_REVERSE,
+            resp_create: URL_LOGIN + URL_CREATE
+
         }
         for resp, rev in TEST_DICT.items():
             with self.subTest(resp=resp):
-                self.assertRedirects(resp, URL_LOGIN + rev)
-
-    def test_check_follow(self):
-        resp = self.authorized_client.get(REVERSE_FOLLOW)
-        self.assertEqual(resp.status_code, HTTPStatus.OK)
+                self.assertRedirects(resp, rev)
 
     def test_template(self):
         """Проверим использование шаблонов"""

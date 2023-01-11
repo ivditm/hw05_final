@@ -2,6 +2,7 @@ from http import HTTPStatus
 import shutil
 import tempfile
 
+from django import forms
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, override_settings, TestCase
@@ -34,6 +35,7 @@ PATH_TO_PICTURE_2 = 'posts/MINE.gif'
 
 
 URL_POST_CREATE = 'posts:post_create'
+ADRESS_CREATE = reverse('posts:post_create')
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
@@ -149,3 +151,23 @@ class PostCreateFormTests(TestCase):
         self.assertEqual(new_comment.text, form_data['text'])
         self.assertEqual(new_comment.author, self.user)
         self.assertEqual(new_comment.post.pk, form_data['post'].pk)
+
+    def test_check_forms_posts_context(self):
+        resp_post_create = self.authorized_client.get(ADRESS_CREATE)
+        resp_post_edit = self.authorized_client.get(self.EDIT_REVERSE)
+        test_list = [resp_post_create, resp_post_edit]
+        form_fields = {
+            'text': forms.fields.CharField,
+            'group': forms.fields.ChoiceField,
+            'image': forms.fields.ImageField
+        }
+        for response in test_list:
+            for value, expected in form_fields.items():
+                with self.subTest(value=value):
+                    form_field = response.context.get('form').fields.get(value)
+                    self.assertIsInstance(form_field, expected)
+
+    def test_check_form_comment(self):
+        resp = self.authorized_client.get(self.DETAIL_REVERSE)
+        form_field = resp.context.get('form').fields.get('text')
+        self.assertIsInstance(form_field, forms.fields.CharField)

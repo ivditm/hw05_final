@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 
-from .common import my_paginator
+from .utils import paginate
 from .forms import CommentForm, PostForm
 from .models import Follow, Group, Post, User
 
@@ -9,7 +9,7 @@ from .models import Follow, Group, Post, User
 def index(request):
     post_list = Post.objects.all()
     context = {
-        'page_obj': my_paginator(post_list, request),
+        'page_obj': paginate(post_list, request),
     }
     return render(request, 'posts/index.html', context)
 
@@ -19,7 +19,7 @@ def group_posts(request, slug):
     posts = group.posts.select_related('group', 'author')
     context = {
         'group': group,
-        'page_obj': my_paginator(posts, request),
+        'page_obj': paginate(posts, request),
     }
     return render(request, 'posts/group_list.html', context)
 
@@ -27,10 +27,12 @@ def group_posts(request, slug):
 def profile(request, username):
     author = get_object_or_404(User, username=username)
     posts = author.posts.select_related('author', 'group')
-    following = author.following.exists()
+    following = (request.user.is_authenticated
+                 and Follow.objects.filter(user=request.user,
+                                           author=author).exists())
     context = {
         'author': author,
-        'page_obj': my_paginator(posts, request),
+        'page_obj': paginate(posts, request),
         'following': following
     }
     return render(request, 'posts/profile.html', context)
@@ -96,12 +98,11 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    authors = Follow.objects.filter(user=request.user).values_list(
-        'author', flat=True
+    posts = Post.objects.filter(
+        author__following__user=request.user
     )
-    posts = Post.objects.filter(author__in=authors)
     context = {
-        'page_obj': my_paginator(posts, request),
+        'page_obj': paginate(posts, request),
     }
     return render(request, 'posts/follow.html', context)
 
@@ -117,5 +118,9 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
-    Follow.objects.get(user=request.user, author=author).delete()
+    get_object_or_404(
+        Follow,
+        user=request.user,
+        author=author
+    ).delete()
     return redirect("posts:follow_index")

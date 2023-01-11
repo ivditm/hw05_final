@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import Group, Post
+from .models import Comment, Follow, Group, Post
+
+MODEL_LIST = [Comment, Follow, Group]
 
 
 class PostAdmin(admin.ModelAdmin):
@@ -18,4 +20,5 @@ class PostAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Post, PostAdmin)
-admin.site.register(Group)
+for model in MODEL_LIST:
+    admin.site.register(model)

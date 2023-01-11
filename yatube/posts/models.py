@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.db import models
 from django.contrib.auth import get_user_model
+# from django.core.exceptions import ValidationError
+from django.db.models.constraints import CheckConstraint, UniqueConstraint
+from django.db.models import F, Q
 
 User = get_user_model()
 
@@ -90,7 +93,27 @@ class Comment(models.Model):
 class Follow(models.Model):
     user = models.ForeignKey(User,
                              on_delete=models.CASCADE,
-                             related_name="follower")
+                             related_name="follower",
+                             verbose_name='подписчик',)
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
-                               related_name="following")
+                               related_name="following",
+                               verbose_name='автор')
+
+    # def clean(self):
+    #     if self.user == self.author:
+    #         raise ValidationError('нельзя подписываться на самого себя')
+    # Почему так нельзя ?
+
+    class Meta:
+        constraints = [
+            CheckConstraint(check=~Q(user=F('author')),
+                            name='could_not_follow_itself'),
+            UniqueConstraint(fields=['user', 'author'], name='unique_follower')
+        ]
+        # unique_together = ('author', 'user',) и так?
+        verbose_name = 'подписка'
+        verbose_name_plural = 'подписки'
+
+    def __str__(self) -> str:
+        return f'{self.user} подписан на {self.author}'

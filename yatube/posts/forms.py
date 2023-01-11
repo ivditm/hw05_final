@@ -3,25 +3,27 @@ from django import forms
 from .models import Comment, Post
 
 
-class PostForm(forms.ModelForm):
+class SuperClass(forms.ModelForm):
+    def check(self):
+        data = self.check['text']
+        if data == '':
+            raise forms.ValidationError('Зачем ничего не написал?')
+        return data
+
+
+class PostForm(SuperClass):
     class Meta:
         model = Post
         fields = ('text', 'group', 'image')
+        labels = {
+            'text': 'Ваш текст',
+            'group': 'Выберите группу',
+            'image': 'Загрузите картинку'
+        }
 
-        def check(self):
-            data = self.check['text']
-            if data == '':
-                raise forms.ValidationError('Зачем ничего не написал?')
-            return data
 
-
-class CommentForm(forms.ModelForm):
+class CommentForm(SuperClass):
     class Meta:
         model = Comment
         fields = ('text',)
-
-        def check(self):
-            data = self.check['text']
-            if data == '':
-                raise forms.ValidationError('Зачем ничего не написал?')
-            return data
+        labels = {'text': 'поделитесь своими мыслями'}
