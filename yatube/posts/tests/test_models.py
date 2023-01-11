@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.conf import settings
+from django.db.utils import IntegrityError
 
 from ..models import Comment, Follow, Group, Post, User
 
@@ -23,7 +24,7 @@ class PostModelTest(TestCase):
             author=cls.user,
             text='TEST'
         )
-        cls.follow = Follow(
+        cls.follow = Follow.objects.create(
             user=cls.user,
             author=cls.user1
         )
@@ -36,7 +37,7 @@ class PostModelTest(TestCase):
             self.group: self.group.title,
             self.comment: ' '.join(
                 self.comment.text.split()[:settings.NUMBER_OF_WORDS]),
-            # self.follow: f'{self.user} подписан на {self.user1}'
+            self.follow: f'{self.user} подписан на {self.user1}'
         }
         for field, expected_value in test_dict.items():
             with self.subTest(field=field):
@@ -59,6 +60,10 @@ class PostModelTest(TestCase):
                 'author': 'Автор',
                 'post': 'Пост',
             },
+            Follow: {
+                'user': 'подписчик',
+                'author': 'автор'
+            }
         }
         for model, dict in DICT.items():
             for field, expected_value in dict.items():
@@ -86,3 +91,14 @@ class PostModelTest(TestCase):
                     self.assertEqual(
                         model._meta.get_field(field).help_text,
                         expected_value)
+
+    def test_do_not_accept_user_to_block_itself(self):
+        with self.assertRaises(IntegrityError):
+            Follow.objects.create(user=self.user, author=self.user)
+
+    def test_actor_and_blocked_persons_should_unique_together(self):
+        with self.assertRaises(IntegrityError):
+            Follow.objects.create(user=self.user, author=self.user1)
+
+    def test_both_user_could_block_each_other(self):
+        Follow.objects.create(user=self.user1, author=self.user)

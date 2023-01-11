@@ -1,4 +1,4 @@
-{% if following and request.user != author %}
+{% if following  %}
  <a class="btn btn-lg btn-light"
    href="{% url 'posts:profile_unfollow' author.username %}"
    role="button">Отписаться</a>

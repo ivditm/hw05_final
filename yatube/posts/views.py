@@ -28,6 +28,7 @@ def profile(request, username):
     author = get_object_or_404(User, username=username)
     posts = author.posts.select_related('author', 'group')
     following = (request.user.is_authenticated
+                 and request.user != author
                  and Follow.objects.filter(user=request.user,
                                            author=author).exists())
     context = {
@@ -41,7 +42,7 @@ def profile(request, username):
 def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     author = post.author
-    comments = post.comments.select_related('post')
+    comments = post.comments.select_related('post', 'author')
     form = CommentForm(request.POST or None)
     context = {
         'author': author,
