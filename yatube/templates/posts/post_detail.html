@@ -45,7 +45,7 @@
             {{post.text|linebreaks}}
           </p>
           <a href="{% url 'posts:post_detail' post.pk %}">подробная информация</a>
-          {% include 'posts/comment.html'%}
+          {% include 'includes/comment.html'%}
         </article>
       </div> 
     </main>

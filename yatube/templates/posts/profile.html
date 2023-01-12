@@ -11,7 +11,9 @@
     <h3>Число подписчиков: {{ author.follower.count }}</h3>
     <h3>Число подписок: {{ author.following.count }}</h3>
     <h3>Число комментов: {{author.comments.count }}</h3>
-    {% include 'posts/includes/follow_or_unfollow.html' %}
+    {% if user != author and user.is_authenticated %}
+      {% include 'posts/includes/follow_or_unfollow.html' %}
+    {% endif %}
   </div>
   {% for post in page_obj %}
     {% include 'posts/single_post.html' %}

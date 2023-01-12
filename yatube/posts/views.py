@@ -34,7 +34,8 @@ def profile(request, username):
     context = {
         'author': author,
         'page_obj': paginate(posts, request),
-        'following': following
+        'following': following,
+        'user': request.user
     }
     return render(request, 'posts/profile.html', context)
 
@@ -118,10 +119,9 @@ def profile_follow(request, username):
 
 @login_required
 def profile_unfollow(request, username):
-    author = get_object_or_404(User, username=username)
     get_object_or_404(
         Follow,
         user=request.user,
-        author=author
+        author=get_object_or_404(User, username=username)
     ).delete()
     return redirect("posts:follow_index")

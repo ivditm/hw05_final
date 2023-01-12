@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.db import models
 from django.contrib.auth import get_user_model
-# from django.core.exceptions import ValidationError
 from django.db.models.constraints import CheckConstraint, UniqueConstraint
 from django.db.models import F, Q
 
@@ -100,18 +99,12 @@ class Follow(models.Model):
                                related_name="following",
                                verbose_name='автор')
 
-    # def clean(self):
-    #     if self.user == self.author:
-    #         raise ValidationError('нельзя подписываться на самого себя')
-    # Почему так нельзя ?
-
     class Meta:
         constraints = [
             CheckConstraint(check=~Q(user=F('author')),
                             name='could_not_follow_itself'),
             UniqueConstraint(fields=['user', 'author'], name='unique_follower')
         ]
-        # unique_together = ('author', 'user',) и так?
         verbose_name = 'подписка'
         verbose_name_plural = 'подписки'
 

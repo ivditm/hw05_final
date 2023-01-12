@@ -119,7 +119,7 @@ class PagesTests(TestCase):
         response_groop = self.authorized_client.get(self.GROUP_REVERSE)
         response_prof = self.authorized_client.get(self.PROFILE_REVERSE)
         response_detail = self.authorized_client.get(self.DETAIL_REVERSE)
-        MU_DICT = {
+        DICT = {
             tuple(response_index.context['page_obj']):
             tuple(Post.objects.all()[:settings.NUMBER_OF_POSTS]),
             response_groop.context[
@@ -129,7 +129,7 @@ class PagesTests(TestCase):
             response_detail.context['post']: self.post,
             response_detail.context['comments'][0]: self.comment
         }
-        for context, expected in MU_DICT.items():
+        for context, expected in DICT.items():
             with self.subTest(context=context):
                 self.assertEqual(context, expected)
 

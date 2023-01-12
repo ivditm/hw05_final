@@ -3,7 +3,7 @@ from django import forms
 from .models import Comment, Post
 
 
-class SuperClass(forms.ModelForm):
+class BaseFormClass(forms.ModelForm):
     def check(self):
         data = self.check['text']
         if data == '':
@@ -11,7 +11,7 @@ class SuperClass(forms.ModelForm):
         return data
 
 
-class PostForm(SuperClass):
+class PostForm(BaseFormClass):
     class Meta:
         model = Post
         fields = ('text', 'group', 'image')
@@ -22,7 +22,7 @@ class PostForm(SuperClass):
         }
 
 
-class CommentForm(SuperClass):
+class CommentForm(BaseFormClass):
     class Meta:
         model = Comment
         fields = ('text',)
