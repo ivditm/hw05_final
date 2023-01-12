@@ -124,6 +124,7 @@ class PagesTests(TestCase):
             tuple(Post.objects.all()[:settings.NUMBER_OF_POSTS]),
             response_groop.context[
                 'page_obj'][0].group.slug: self.group.slug,
+            response_groop.context['group']: self.group,
             response_prof.context[
                 'page_obj'][0].author.username: self.user.username,
             response_detail.context['post']: self.post,

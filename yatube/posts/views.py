@@ -34,8 +34,7 @@ def profile(request, username):
     context = {
         'author': author,
         'page_obj': paginate(posts, request),
-        'following': following,
-        'user': request.user
+        'following': following
     }
     return render(request, 'posts/profile.html', context)
 
