@@ -11,7 +11,7 @@
     {% load cache %}
       {% cache 20 index_page %}
         {% for post in page_obj %}
-          {% include 'posts/single_post.html' %}
+          {% include 'includes/single_post.html' %}
         {% endfor %}
       {% include 'includes/paginator.html' %}
       {% endcache %}

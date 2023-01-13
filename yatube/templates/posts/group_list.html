@@ -9,7 +9,7 @@
     <p></p>
     <div><p>{{group.description| linebreaks}}</p></div>
   {% for post in page_obj %}
-    {%include 'posts/single_post.html'%}
+    {%include 'includes/single_post.html'%}
   {% endfor %}
   {% include 'includes/paginator.html' %}
 {% endblock %}

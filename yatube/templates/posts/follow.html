@@ -9,7 +9,7 @@
   {% block content %}
     {% include 'posts/includes/switcher.html' with index=True follow=False%}
     {% for post in page_obj %}
-        {% include 'posts/single_post.html' %}
+        {% include 'includes/single_post.html' %}
     {% endfor %}
     {% include 'includes/paginator.html' %}
 {% endblock %}
