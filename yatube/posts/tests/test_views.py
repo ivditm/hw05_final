@@ -114,7 +114,7 @@ class PagesTests(TestCase):
         cache.clear()
 
     def test_check_views_context(self):
-        """Проверим контекст страницы group_list"""
+        """Проверим контексты"""
         response_index = self.authorized_client.get(ADRESS_INDEX)
         response_groop = self.authorized_client.get(self.GROUP_REVERSE)
         response_prof = self.authorized_client.get(self.PROFILE_REVERSE)

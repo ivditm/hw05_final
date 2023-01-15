@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'about.apps.AboutConfig',
     'sorl.thumbnail',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
@@ -37,6 +38,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'yatube.urls'
@@ -121,3 +123,7 @@ EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
 # CONSTANTS
 NUMBER_OF_POSTS = 10
 NUMBER_OF_WORDS = 4
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
